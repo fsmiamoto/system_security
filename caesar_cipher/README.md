@@ -1,3 +1,3 @@
 # caesar_cipher
 
-A Rust noob implementation of a Caesar Cipher.
+A Rust n00b implementation of a Caesar Cipher.
