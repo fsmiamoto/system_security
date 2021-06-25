@@ -1,6 +1,6 @@
-use std::char;
 use std::io::Read;
 use structopt::StructOpt;
+mod caesar;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "caesar", about = "A simple Caesar Cipher")]
@@ -22,7 +22,7 @@ fn main() -> Result<(), &'static str> {
 
     if !args.cipher && !args.decipher {
         return Err("at least one flag is required");
-   }
+    }
 
     let mut buffer = String::new();
     let result = std::io::stdin().read_to_string(&mut buffer);
@@ -31,24 +31,11 @@ fn main() -> Result<(), &'static str> {
         Err(_) => return Err("bad line"),
     };
 
-    let operator: fn(char, u8) -> char = if args.cipher { cipher } else { decipher };
-
-    let result: String = buffer.chars().map(|c| operator(c, args.key)).collect();
+    let result = if args.cipher {
+        caesar::cipher(buffer, args.key)
+    } else {
+        caesar::decipher(buffer, args.key)
+    };
     println!("{}", result);
     Ok(())
-}
-
-// TODO: Check for corner cases
-fn cipher(c: char, key: u8) -> char {
-    if !c.is_alphanumeric() {
-        return c;
-    }
-    return std::char::from_u32(c as u32 + key as u32).unwrap_or(c);
-}
-
-fn decipher(c: char, key: u8) -> char {
-    if !c.is_alphanumeric() {
-        return c;
-    }
-    return std::char::from_u32(c as u32 - key as u32).unwrap_or(c);
 }
