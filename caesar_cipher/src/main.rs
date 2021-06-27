@@ -2,7 +2,7 @@ use std::io::Read;
 use structopt::StructOpt;
 mod caesar;
 
-#[derive(Debug, StructOpt)]
+#[derive(StructOpt)]
 #[structopt(name = "caesar", about = "A simple Caesar Cipher")]
 struct Cli {
     #[structopt(short, long)]
@@ -36,6 +36,7 @@ fn main() -> Result<(), &'static str> {
     } else {
         caesar::decipher(buffer, args.key)
     };
-    println!("{}", result);
+
+    print!("{}", result);
     Ok(())
 }
