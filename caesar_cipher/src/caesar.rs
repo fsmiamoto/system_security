@@ -1,11 +1,14 @@
-// TODO: Remove magic numbers
-
 const ALPHABET: [char; 62] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
     'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4',
     '5', '6', '7', '8', '9',
 ];
+
+const ALPHABET_LEN: u8 = 62;
+const UPPER_BASE_INDEX: u8 = 0;
+const LOWER_BASE_INDEX: u8 = 26;
+const DIGIT_BASE_INDEX: u8 = 52;
 
 pub fn cipher(content: String, key: u8) -> String {
     content
@@ -27,37 +30,37 @@ fn cipher_char(c: char, key: u8) -> char {
     if !c.is_alphanumeric() {
         return c;
     }
-    let index = get_index(c);
-    let other_index = if index + key < 62 {
-        index + key
+    let before = get_index(c);
+    let after = if before + key < ALPHABET_LEN {
+        before + key
     } else {
-        index + key - 62
+        before + key - ALPHABET_LEN
     };
-    ALPHABET[other_index as usize]
+    ALPHABET[after as usize]
 }
 
 fn decipher_char(c: char, key: u8) -> char {
     if !c.is_alphanumeric() {
         return c;
     }
-    let index = get_index(c);
-    let other_index = if index >= key {
-        index - key
+    let before = get_index(c);
+    let after = if before >= key {
+        before - key
     } else {
-        index + 62 - key
+        before + ALPHABET_LEN - key
     };
-    ALPHABET[other_index as usize]
+    ALPHABET[after as usize]
 }
 
 fn get_index(c: char) -> u8 {
     if c.is_uppercase() {
-        return (c as u32 - 'A' as u32) as u8;
+        return (c as u32 - 'A' as u32) as u8 + UPPER_BASE_INDEX;
     }
     if c.is_lowercase() {
-        return (c as u32 - 'a' as u32) as u8 + 26;
+        return (c as u32 - 'a' as u32) as u8 + LOWER_BASE_INDEX;
     }
     if c.is_numeric() {
-        return (c as u32 - '0' as u32) as u8 + 52;
+        return (c as u32 - '0' as u32) as u8 + DIGIT_BASE_INDEX;
     }
     return 0;
 }
