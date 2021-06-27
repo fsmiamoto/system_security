@@ -89,10 +89,13 @@ mod tests {
     #[test]
     fn test_cipher() -> Result<(), String> {
         let key = 23;
-        let message: String = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG".to_string();
         assert_eq!(
-            cipher(message, key),
+            cipher("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG".to_string(), key),
             "qeb nrfZh Yoltk clu grjmp lsbo qeb iXwv ald"
+        );
+        assert_eq!(
+            cipher("The password is 12345".to_string(), key),
+            "q41 CxFFJBE0 5F OPQRS"
         );
         Ok(())
     }
@@ -104,6 +107,10 @@ mod tests {
         assert_eq!(
             decipher(message, key),
             "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"
+        );
+        assert_eq!(
+            decipher("q41 CxFFJBE0 5F OPQRS".to_string(), key),
+            "The password is 12345"
         );
         Ok(())
     }
