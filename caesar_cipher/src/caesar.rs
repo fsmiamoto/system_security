@@ -100,6 +100,10 @@ mod tests {
             cipher("The password is 12345".to_string(), key),
             "q41 CxFFJBE0 5F OPQRS"
         );
+        assert_eq!(
+            cipher("Faça o que eu digo mas não faça o que eu faço".to_string(), key),
+            "cxzx B DH1 1H 053B 9xF AxB 2xzx B DH1 1H 2xzB"
+        );
         Ok(())
     }
 
@@ -114,6 +118,10 @@ mod tests {
         assert_eq!(
             decipher("q41 CxFFJBE0 5F OPQRS".to_string(), key),
             "The password is 12345"
+        );
+        assert_eq!(
+            decipher("cxzx B DH1 1H 053B 9xF AxB 2xzx B DH1 1H 2xzB".to_string(), key),
+            "Faca o que eu digo mas nao faca o que eu faco"
         );
         Ok(())
     }
