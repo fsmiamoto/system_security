@@ -5,7 +5,7 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 #[structopt(name = "vernam", about = "A simple Vernam Cipher")]
 struct Cli {
-    #[structopt(short ="k", long = "key",parse(from_os_str))]
+    #[structopt(short = "k", long = "key", parse(from_os_str))]
     key: PathBuf,
 }
 
@@ -21,14 +21,21 @@ fn main() -> Result<(), &'static str> {
 
     let content: String;
     match std::fs::read_to_string(args.key) {
-        Ok(c) => { content = c}
-        Err(_) => return Err("Error while reading key file")
+        Ok(c) => content = c,
+        Err(_) => return Err("Error while reading key file"),
     }
 
     if content.len() != buffer.len() {
         return Err("the key length must be equal to the content length");
     }
 
-    print!("{:?}", content);
+    let result: String = content
+        .chars()
+        .zip(buffer.chars())
+        .map(|(a, b)| (a as u8 ^ b as u8) as char)
+        .collect();
+
+    print!("{}", result);
+
     Ok(())
 }
