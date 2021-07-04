@@ -1,11 +1,20 @@
 use std::collections::HashMap;
 use std::io::Read;
 
-fn main() -> Result<(), std::io::Error> {
-    let mut buffer = String::new();
-    std::io::stdin().read_to_string(&mut buffer)?;
+const ASCII_LOWER_LIMIT: u8 = 31;
+const ASCII_UPPER_LIMIT: u8 = 127;
 
-    let alphanumeric : String = buffer.chars().filter(|c| c.is_alphanumeric()).collect();
+fn main() -> Result<(), std::io::Error> {
+    let mut buffer = Vec::new();
+    std::io::stdin().read_to_end(&mut buffer)?;
+
+    let sanitized: Vec<char> = buffer
+        .into_iter()
+        .filter(|c| (*c > ASCII_LOWER_LIMIT && *c < ASCII_UPPER_LIMIT))
+        .map(|c| (c as char))
+        .collect();
+
+    let alphanumeric: String = sanitized.iter().filter(|c| c.is_alphanumeric()).collect();
 
     let count_map = alphanumeric.chars().fold(HashMap::new(), |mut map, c| {
         *map.entry(c).or_insert(0) += 1;
@@ -16,8 +25,8 @@ fn main() -> Result<(), std::io::Error> {
 
     count_vec.sort_by(|a, b| b.1.cmp(a.1));
 
-    for (character,count) in count_vec.iter() {
-        let percentage : f64 = (*count * 100 / alphanumeric.len()) as f64;
+    for (character, count) in count_vec.iter() {
+        let percentage: f64 = (*count * 100 / alphanumeric.len()) as f64;
         println!("'{}': {} - {}%", character, *count, percentage);
     }
 
