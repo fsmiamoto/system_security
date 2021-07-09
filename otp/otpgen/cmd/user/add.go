@@ -1,21 +1,22 @@
 package user
 
 import (
-	"fmt"
-
+	"github.com/fsmiamoto/system_security/otp/otpgen/repository"
 	"github.com/spf13/cobra"
 )
 
 var Add = &cobra.Command{
 	Use:   "add [user] [password]",
 	Short: "Add a new user to the database",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			cmd.Help()
-			return
+			return cmd.Help()
 		}
 
-		fmt.Println("User: " + args[0])
-		fmt.Println("Password: " + args[1])
+		return add(args[0], args[1])
 	},
+}
+
+func add(username, password string) error {
+	return repository.Add(username, password)
 }
