@@ -24,12 +24,5 @@ func newList(n int, seed, salt, timestamp string) []string {
 		otps[i] = hash.Sha256(otps[i-1])[:length]
 	}
 
-	return reverse(otps)
-}
-
-func reverse(s []string) []string {
-	for left, right := 0, len(s)-1; left < right; left, right = left+1, right-1 {
-		s[left], s[right] = s[right], s[left]
-	}
-	return s
+	return otps
 }
