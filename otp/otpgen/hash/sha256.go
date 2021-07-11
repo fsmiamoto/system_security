@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 )
 
+const maxLength = 32
+
 func Sha256(s string) string {
 	h := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(h[:])
+	return hex.EncodeToString(h[:])[:maxLength]
 }

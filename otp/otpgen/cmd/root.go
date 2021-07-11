@@ -4,21 +4,23 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fsmiamoto/system_security/otp/otpgen/cmd/gen"
 	"github.com/fsmiamoto/system_security/otp/otpgen/cmd/user"
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
+var root = &cobra.Command{
 	Use:   "otpgen",
 	Short: "One-Time Password Generator",
 }
 
 func init() {
-	rootCmd.AddCommand(user.User)
+	root.AddCommand(user.User)
+	root.AddCommand(gen.Gen)
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

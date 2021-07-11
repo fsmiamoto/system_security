@@ -4,15 +4,15 @@ SRC := $(wildcard **/*.go)
 BIN := otpgen
 BINDIR := bin
 DBFILE := users.db
+DEBUG_FLAGS := -gcflags="all=-N -l"
 
 $(BIN): $(SRC)
-	$(GO) build -o $(BINDIR)/$(BIN)
+	$(GO) build $(DEBUG_FLAGS) -o $(BINDIR)/$(BIN)
 
 .PHONY: db
 db:
 	sqlite3 $(DBFILE) "\
-		CREATE TABLE IF NOT EXISTS users(username TEXT, seed TEXT, password TEXT, salt TEXT);\
-		CREATE TABLE IF NOT EXISTS otp(password TEXT, used BOOLEAN);\
+		CREATE TABLE IF NOT EXISTS users(username TEXT UNIQUE NOT NULL, seed TEXT NOT NULL, password TEXT NOT NULL, salt TEXT NOT NULL);\
 	"
 
 .PHONY: get-users
