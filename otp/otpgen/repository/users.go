@@ -8,16 +8,17 @@ import (
 	"github.com/fsmiamoto/system_security/otp/otpgen/hash"
 )
 
+const maxHashLength = 32
+
 func Add(username, password string) error {
 	stmt := `INSERT INTO users (username, password, seed, salt) VALUES (?,?,?,?)`
 
-	salt := rand.Int()
-	seed := rand.Int()
+	salt := hash.Sha256(strconv.Itoa(rand.Int()))[:maxHashLength]
+	seed := hash.Sha256(strconv.Itoa(rand.Int()))[:maxHashLength]
 
-	hashedSeed := hash.Sha256(strconv.Itoa(seed))
-	hashedPassword := hash.Sha256(password)
+	hashedPassword := hash.Sha256(password + salt)[:maxHashLength]
 
-	_, err := db.DB.Exec(stmt, username, hashedPassword, hashedSeed, salt)
+	_, err := db.DB.Exec(stmt, username, hashedPassword, seed, salt)
 	return err
 }
 

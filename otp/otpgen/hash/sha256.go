@@ -1,9 +1,11 @@
 package hash
 
-import "crypto/sha256"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+)
 
 func Sha256(s string) string {
-	h := sha256.New()
-	h.Write([]byte(s))
-	return string(h.Sum(nil))
+	h := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(h[:])
 }
