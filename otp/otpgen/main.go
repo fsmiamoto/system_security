@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/fsmiamoto/system_security/otp/otpgen/cmd"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
