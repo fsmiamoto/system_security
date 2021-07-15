@@ -32,6 +32,7 @@ func login(username, password string) error {
 		return ErrAccessDenied
 	}
 
+	// TODO: Store only the hash of both seed and salt
 	otps := otp.NewList(5, user.Seed, user.Salt)
 
 	index, allow := 0, false
