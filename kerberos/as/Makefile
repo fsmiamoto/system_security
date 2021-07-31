@@ -19,7 +19,8 @@ db:
 	sqlite3 $(DBFILE) "\
 		CREATE TABLE IF NOT EXISTS clients(\
 			id TEXT UNIQUE NOT NULL DEFAULT (lower(hex(randomblob(16)))),\
-			secret_key TEXT NOT NULL DEFAULT (lower(hex(randomblob(8))))\
+			secret_key TEXT NOT NULL DEFAULT (substring(lower(hex(randomblob(32))),8,8)),\
+			iv TEXT NOT NULL DEFAULT (substring(lower(hex(randomblob(32))),8,8))\
 		);\
 	"
 

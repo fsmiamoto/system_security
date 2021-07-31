@@ -6,13 +6,13 @@ import (
 )
 
 func Get(id string) (*contracts.Client, error) {
-	const stmt = `SELECT id, secret_key FROM clients WHERE id = ?`
+	const stmt = `SELECT id, secret_key, iv FROM clients WHERE id = ?`
 
 	c := &contracts.Client{}
 
 	row := db.DB.QueryRow(stmt, id)
 
-	if err := row.Scan(&c.ID, &c.SecretKey); err != nil {
+	if err := row.Scan(&c.ID, &c.SecretKey, &c.InitVector); err != nil {
 		return nil, err
 	}
 
