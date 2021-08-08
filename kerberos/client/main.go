@@ -12,6 +12,7 @@ import (
 
 	"github.com/fsmiamoto/system_security/kerberos/as/contracts"
 	"github.com/fsmiamoto/system_security/kerberos/crypto"
+	service "github.com/fsmiamoto/system_security/kerberos/service/contracts"
 	tgs "github.com/fsmiamoto/system_security/kerberos/tgs/contracts"
 	"github.com/hokaccha/go-prettyjson"
 )
@@ -24,6 +25,7 @@ var httpClient http.Client
 
 var authorizationServer = "http://localhost:3000"
 var ticketGrantingServer = "http://localhost:4000"
+var serviceServer = "http://localhost:5000"
 
 func main() {
 	svcReq := contracts.ServiceRequest{
@@ -121,6 +123,45 @@ func main() {
 
 	fmt.Println(string(a))
 	fmt.Println(string(t))
+
+	r := service.Request{
+		ClientID:     clientID,
+		AccessPeriod: tgsResponse.AccessPeriod,
+	}
+
+	rBytes, err := json.Marshal(r)
+	mustBeNil(err)
+	rBytes, err = crypto.Encrypt([]byte(tgsResponse.KeyClientService), []byte(tgsResponse.ServiceInitVector), rBytes)
+
+	svcReqq := &service.ServiceRequest{
+		CipheredRequest:       hex.EncodeToString(rBytes),
+		CipheredServiceTicket: tgsRes.CipheredServiceTicket,
+	}
+
+	svcReqBytes, err := json.Marshal(svcReqq)
+	mustBeNil(err)
+
+	resp, err = httpClient.Post(serviceServer, "application/json", bytes.NewReader(svcReqBytes))
+	mustBeNil(err)
+
+	svcResp := &service.ServiceResponse{}
+	d = json.NewDecoder(resp.Body)
+	mustBeNil(d.Decode(svcResp))
+
+	fmt.Println("Response - Service")
+	a, _ = prettyjson.Marshal(svcResp)
+	fmt.Println(string(a))
+
+	respBytes, err := hex.DecodeString(svcResp.CipheredResponse)
+	mustBeNil(err)
+	respBytes, err = crypto.Decrypt([]byte(tgsResponse.KeyClientService), []byte(tgsResponse.ServiceInitVector), respBytes)
+
+	rr := &service.Response{}
+	mustBeNil(json.Unmarshal(respBytes, rr))
+
+	fmt.Println("Response - Service")
+	a, _ = prettyjson.Marshal(rr)
+	fmt.Println(string(a))
 }
 
 // helper for dumb err checking, don't do this on production
