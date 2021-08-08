@@ -11,9 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const TGSKey = "5a6d29b8"
-
-var TGSInitVector = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
+var tgsKey, tgsInitVector string
 
 func main() {
 	app := fiber.New(fiber.Config{
@@ -59,7 +57,10 @@ func main() {
 				AccessPeriod: serviceReq.AccessPeriod,
 				KeyClientTGS: key,
 			})
-		tgtBytes, _ := crypto.Encrypt([]byte(TGSKey), TGSInitVector, tgt)
+		tgtBytes, err := crypto.Encrypt([]byte(tgsKey), []byte(tgsInitVector), tgt)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		res, err :=
 			json.Marshal(contracts.ASResponse{
@@ -75,19 +76,6 @@ func main() {
 		}
 
 		return c.JSON(tgtRes)
-	})
-
-	app.Post("/encrypt", func(c *fiber.Ctx) error {
-		key := c.FormValue("key")
-		iv := c.FormValue("iv")
-		content := c.FormValue("content")
-
-		data, err := crypto.Encrypt([]byte(key), []byte(iv), []byte(content))
-		if err != nil {
-			return err
-		}
-
-		return c.SendString(string(hex.EncodeToString(data)))
 	})
 
 	app.Listen(":3000")

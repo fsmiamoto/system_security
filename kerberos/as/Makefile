@@ -1,5 +1,6 @@
 GO := $(shell which go)
 GOBIN := $(shell go env GOBIN)
+LDFLAGS = -X main.tgsKey=$(TGS_KEY) -X main.tgsInitVector=$(TGS_INIT_VECTOR)
 
 SRC := $(wildcard **/*.go)
 BIN := as
@@ -7,8 +8,12 @@ BINDIR := bin
 DBFILE := clients.db
 DEBUG_FLAGS := -gcflags="all=-N -l"
 
+# Ideally should be envvars but this is just for learning :)
+TGS_KEY = 5a6d29b8
+TGS_INIT_VECTOR = 548ee275
+
 $(BIN): $(SRC)
-	$(GO) build -o $(BINDIR)/$(BIN)
+	$(GO) build -ldflags '$(LDFLAGS)' -o $(BINDIR)/$(BIN)
 
 .PHONY: dev
 dev: compile-daemon
