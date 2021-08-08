@@ -13,8 +13,9 @@ type TGTResponse struct {
 }
 
 type ASResponse struct {
-	KeyClientTGS string `json:"key_client_tgs"`
-	Nonce        uint64 `json:"nonce"`
+	KeyClientTGS  string `json:"key_client_tgs"`
+	TGSInitVector string `json:"tgs_init_vector"`
+	Nonce         uint64 `json:"nonce"`
 }
 
 type TGT struct {
