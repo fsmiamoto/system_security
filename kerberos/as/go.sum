@@ -1,5 +1,7 @@
 github.com/andybalholm/brotli v1.0.2 h1:JKnhI/XQ75uFBTiuzXpzFrUriDPiZjlOSzh6wXogP0E=
 github.com/andybalholm/brotli v1.0.2/go.mod h1:loMXtMfwqflxFJPmdbJO0a3KNoPuLBgiu3qAvBg8x/Y=
+github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808005743-6fad9e35d838 h1:AbfzLVVFNfXLeeOijZRYrx0Zh5GEeNWJ16vLn9XIvlw=
+github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808005743-6fad9e35d838/go.mod h1:+U2qJGpfBkRv0d/3Oim58eaxDf9jIGZGp4SNzOTxN2g=
 github.com/gofiber/fiber/v2 v2.16.0 h1:Bly40vAh4qofpCoVYGLYC0TS9lNGNA1OVSPuzhIK7Q8=
 github.com/gofiber/fiber/v2 v2.16.0/go.mod h1:iftruuHGkRYGEXVISmdD7HTYWyfS2Bh+Dkfq4n/1Owg=
 github.com/golang/snappy v0.0.3/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=

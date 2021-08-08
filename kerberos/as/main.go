@@ -6,8 +6,8 @@ import (
 	"log"
 
 	"github.com/fsmiamoto/system_security/kerberos/as/contracts"
-	"github.com/fsmiamoto/system_security/kerberos/as/crypto"
 	"github.com/fsmiamoto/system_security/kerberos/as/repository"
+	"github.com/fsmiamoto/system_security/kerberos/crypto"
 	"github.com/gofiber/fiber/v2"
 )
 
