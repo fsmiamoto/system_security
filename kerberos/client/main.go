@@ -12,19 +12,23 @@ import (
 
 	"github.com/fsmiamoto/system_security/kerberos/as/contracts"
 	"github.com/fsmiamoto/system_security/kerberos/crypto"
+	tgs "github.com/fsmiamoto/system_security/kerberos/tgs/contracts"
 	"github.com/hokaccha/go-prettyjson"
 )
 
 var clientID, secretKey, initVector string
 
+var serviceID = "bb1b48f873671ac1bde6fa494b67ba5f"
+var accessPeriod = 30 * time.Minute
 var httpClient http.Client
 
 var authorizationServer = "http://localhost:3000"
+var ticketGrantingServer = "http://localhost:4000"
 
 func main() {
 	svcReq := contracts.ServiceRequest{
-		AccessPeriod: 30 * time.Minute,
-		ServiceID:    "1234a",
+		AccessPeriod: accessPeriod,
+		ServiceID:    serviceID,
 		Nonce:        rand.Uint64(),
 	}
 
@@ -61,12 +65,62 @@ func main() {
 
 	mustBeNil(json.Unmarshal(u, asResp))
 
+	if asResp.Nonce != svcReq.Nonce {
+		log.Fatalf("Nonce received does not match %d; want %d", asResp.Nonce, svcReq.Nonce)
+	}
+
 	a, _ := prettyjson.Marshal(asResp)
 	t, _ := prettyjson.Marshal(tgtResp)
 
 	fmt.Println("Response - AS")
-	fmt.Println("TGT:", string(t))
-	fmt.Println("AS:", string(a))
+	fmt.Println(string(t))
+	fmt.Println(string(a))
+
+	tgsSvcReq := &tgs.ServiceRequest{
+		ClientID:     clientID,
+		ServiceID:    serviceID,
+		AccessPeriod: accessPeriod,
+		Nonce:        rand.Uint64(),
+	}
+
+	tgsSvcReqBytes, err := json.Marshal(tgsSvcReq)
+	mustBeNil(err)
+
+	tgsSvcReqBytes, err = crypto.Encrypt([]byte(asResp.KeyClientTGS), []byte(asResp.TGSInitVector), tgsSvcReqBytes)
+	mustBeNil(err)
+
+	str := &tgs.ServiceTicketRequest{
+		CipheredServiceRequest: hex.EncodeToString(tgsSvcReqBytes),
+		CipheredTGT:            tgtResp.CipheredTGT,
+	}
+
+	body, err = json.Marshal(str)
+	mustBeNil(err)
+
+	resp, err = httpClient.Post(ticketGrantingServer, "application/json", bytes.NewReader(body))
+	mustBeNil(err)
+
+	tgsRes := &tgs.ServiceTicketResponse{}
+
+	d = json.NewDecoder(resp.Body)
+	mustBeNil(d.Decode(tgsRes))
+
+	tgsResBytes, err := hex.DecodeString(tgsRes.CipheredTGSResponse)
+	tgsResBytes, err = crypto.Decrypt([]byte(asResp.KeyClientTGS), []byte(asResp.TGSInitVector), tgsResBytes)
+
+	tgsResponse := &tgs.TGSResponse{}
+	mustBeNil(json.Unmarshal(tgsResBytes, tgsResponse))
+
+	if tgsResponse.Nonce != tgsSvcReq.Nonce {
+		log.Fatalf("Nonce is different from expected %d; want %d", tgsResponse.Nonce, tgsSvcReq.Nonce)
+	}
+
+	fmt.Println("Response - TGS")
+	a, _ = prettyjson.Marshal(tgsRes)
+	t, _ = prettyjson.Marshal(tgsResponse)
+
+	fmt.Println(string(a))
+	fmt.Println(string(t))
 }
 
 // helper for dumb err checking, don't do this on production
