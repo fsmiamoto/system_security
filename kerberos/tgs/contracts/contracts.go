@@ -13,9 +13,10 @@ type ServiceTicketResponse struct {
 }
 
 type TGSResponse struct {
-	KeyClientService string        `json:"key_client_service,omitempty"`
-	AccessPeriod     time.Duration `json:"access_period,omitempty"`
-	Nonce            uint64        `json:"nonce,omitempty"`
+	KeyClientService  string        `json:"key_client_service,omitempty"`
+	AccessPeriod      time.Duration `json:"access_period,omitempty"`
+	Nonce             uint64        `json:"nonce,omitempty"`
+	ServiceInitVector string        `json:"service_init_vector,omitempty"`
 }
 
 type ServiceTicket struct {

@@ -76,9 +76,10 @@ func main() {
 		mustBeNil(err)
 
 		tgsRes := &contracts.TGSResponse{
-			AccessPeriod:     accessPeriod,
-			KeyClientService: serviceClientKey,
-			Nonce:            svcReq.Nonce,
+			AccessPeriod:      accessPeriod,
+			KeyClientService:  serviceClientKey,
+			Nonce:             svcReq.Nonce,
+			ServiceInitVector: string(svc.InitVector),
 		}
 
 		tgsResBytes, err := json.Marshal(tgsRes)
