@@ -20,6 +20,7 @@ type ASResponse struct {
 
 type TGT struct {
 	ClientID     string        `json:"client_id"`
+	CreatedAt    time.Time     `json:"created_at"`
 	AccessPeriod time.Duration `json:"access_period"`
 	KeyClientTGS string        `json:"key_client_tgs"`
 }

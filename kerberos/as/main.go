@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/fsmiamoto/system_security/kerberos/as/contracts"
 	"github.com/fsmiamoto/system_security/kerberos/as/repository"
@@ -54,23 +55,23 @@ func main() {
 			return err
 		}
 
-		tgt, err := json.Marshal(
-			contracts.TGT{
-				ClientID:     client.ID,
-				AccessPeriod: serviceReq.AccessPeriod,
-				KeyClientTGS: key,
-			})
+		tgt, err := json.Marshal(contracts.TGT{
+			ClientID:     client.ID,
+			AccessPeriod: serviceReq.AccessPeriod,
+			CreatedAt:    time.Now(),
+			KeyClientTGS: key,
+		})
+
 		tgtBytes, err := crypto.Encrypt([]byte(tgsKey), []byte(tgsInitVector), tgt)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		res, err :=
-			json.Marshal(contracts.ASResponse{
-				KeyClientTGS:  key,
-				TGTInitVector: tgsInitVector,
-				Nonce:         serviceReq.Nonce,
-			})
+		res, err := json.Marshal(contracts.ASResponse{
+			KeyClientTGS:  key,
+			TGSInitVector: tgsInitVector,
+			Nonce:         serviceReq.Nonce,
+		})
 
 		resBytes, _ := crypto.Encrypt(client.SecretKey, client.InitVector, res)
 
