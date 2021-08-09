@@ -22,6 +22,7 @@ type TGSResponse struct {
 type ServiceTicket struct {
 	ClientID         string        `json:"client_id"`
 	AccessPeriod     time.Duration `json:"access_period"`
+	CreatedAt        time.Time     `json:"created_at"`
 	KeyClientService string        `json:"key_client_service"`
 }
 
