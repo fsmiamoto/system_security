@@ -44,6 +44,10 @@ func main() {
 			Nonce:  rand.Uint64(),
 		}
 
+		if t.CreatedAt.Add(t.AccessPeriod).After(time.Now()) {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid ticket")
+		}
+
 		resBytes, err := json.Marshal(res)
 		mustBeNil(err)
 

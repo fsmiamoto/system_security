@@ -1,7 +1,7 @@
 github.com/andybalholm/brotli v1.0.2 h1:JKnhI/XQ75uFBTiuzXpzFrUriDPiZjlOSzh6wXogP0E=
 github.com/andybalholm/brotli v1.0.2/go.mod h1:loMXtMfwqflxFJPmdbJO0a3KNoPuLBgiu3qAvBg8x/Y=
-github.com/fsmiamoto/system_security/kerberos/as v0.0.0-20210808013406-62c152ac960b h1:4oTab8dcTunNbnU7yWTfTV8RJZHLK0afbXwlP25xfRQ=
-github.com/fsmiamoto/system_security/kerberos/as v0.0.0-20210808013406-62c152ac960b/go.mod h1:wjkt6Xt8hS07CCGGGGKUEOrASG3Nj5us50++pN/bysw=
+github.com/fsmiamoto/system_security/kerberos/as v0.0.0-20210809005524-d3a32bfe7d2f h1:yKW6zG4c9erYkPzK6MIzUs8Ggfxmp74jPTVCDRkS9Ls=
+github.com/fsmiamoto/system_security/kerberos/as v0.0.0-20210809005524-d3a32bfe7d2f/go.mod h1:wjkt6Xt8hS07CCGGGGKUEOrASG3Nj5us50++pN/bysw=
 github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808005743-6fad9e35d838/go.mod h1:+U2qJGpfBkRv0d/3Oim58eaxDf9jIGZGp4SNzOTxN2g=
 github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808013406-62c152ac960b h1:FgF+YIWYceNS1uAnG+2c+N+MtmR1r7DgDqjFbqkCbCg=
 github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808013406-62c152ac960b/go.mod h1:+U2qJGpfBkRv0d/3Oim58eaxDf9jIGZGp4SNzOTxN2g=

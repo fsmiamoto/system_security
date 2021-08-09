@@ -2,11 +2,17 @@ github.com/andybalholm/brotli v1.0.2/go.mod h1:loMXtMfwqflxFJPmdbJO0a3KNoPuLBgiu
 github.com/fatih/color v1.12.0 h1:mRhaKNwANqRgUBGKmnI5ZxEk7QXmjQeCcuYFMX2bfcc=
 github.com/fatih/color v1.12.0/go.mod h1:ELkj/draVOlAH/xkhN6mQ50Qd0MPOk5AAr3maGEBuJM=
 github.com/fsmiamoto/system_security/kerberos/as v0.0.0-20210808013406-62c152ac960b/go.mod h1:wjkt6Xt8hS07CCGGGGKUEOrASG3Nj5us50++pN/bysw=
+github.com/fsmiamoto/system_security/kerberos/as v0.0.0-20210809005524-d3a32bfe7d2f h1:yKW6zG4c9erYkPzK6MIzUs8Ggfxmp74jPTVCDRkS9Ls=
+github.com/fsmiamoto/system_security/kerberos/as v0.0.0-20210809005524-d3a32bfe7d2f/go.mod h1:wjkt6Xt8hS07CCGGGGKUEOrASG3Nj5us50++pN/bysw=
 github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808005743-6fad9e35d838/go.mod h1:+U2qJGpfBkRv0d/3Oim58eaxDf9jIGZGp4SNzOTxN2g=
 github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808013406-62c152ac960b/go.mod h1:+U2qJGpfBkRv0d/3Oim58eaxDf9jIGZGp4SNzOTxN2g=
 github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808194708-ee78a9aa9c4b h1:SE6l/V6spo2P9yhYqLF8mIrz5qxP1WhPRVWlGebWNv4=
 github.com/fsmiamoto/system_security/kerberos/crypto v0.0.0-20210808194708-ee78a9aa9c4b/go.mod h1:+U2qJGpfBkRv0d/3Oim58eaxDf9jIGZGp4SNzOTxN2g=
+github.com/fsmiamoto/system_security/kerberos/service v0.0.0-20210809005524-d3a32bfe7d2f h1:I+cnQigakoL7E6ahwOox8gm2TN4MnPlliqkYRf/s5w0=
+github.com/fsmiamoto/system_security/kerberos/service v0.0.0-20210809005524-d3a32bfe7d2f/go.mod h1:eFEFRUjhwVPoNuMBTobALVbYUlPrKw25Jb2r9yl/xfY=
 github.com/fsmiamoto/system_security/kerberos/tgs v0.0.0-20210808194708-ee78a9aa9c4b/go.mod h1:/c3ESGWwWUFfgpD/7i7XpVxnXwJ/JHCya7yDgPqlNo8=
+github.com/fsmiamoto/system_security/kerberos/tgs v0.0.0-20210809005524-d3a32bfe7d2f h1:Bp/ov4EQ2KXF8DCdS6c7LMIvMId4JuhOXPvVqM2m9uQ=
+github.com/fsmiamoto/system_security/kerberos/tgs v0.0.0-20210809005524-d3a32bfe7d2f/go.mod h1:/c3ESGWwWUFfgpD/7i7XpVxnXwJ/JHCya7yDgPqlNo8=
 github.com/gofiber/fiber/v2 v2.16.0/go.mod h1:iftruuHGkRYGEXVISmdD7HTYWyfS2Bh+Dkfq4n/1Owg=
 github.com/golang/snappy v0.0.3/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519 h1:nqAlWFEdqI0ClbTDrhDvE/8LeQ4pftrqKUX9w5k0j3s=

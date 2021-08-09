@@ -46,6 +46,11 @@ func main() {
 		fmt.Println("Client ID:", tgt.ClientID)
 		fmt.Println("Key:", tgt.KeyClientTGS)
 		fmt.Println("Period:", tgt.AccessPeriod)
+		fmt.Println("Created at:", tgt.CreatedAt)
+
+		if time.Now().After(tgt.CreatedAt.Add(tgt.AccessPeriod)) {
+			return fiber.NewError(fiber.StatusUnauthorized, "expired TGT")
+		}
 
 		svcReqBytes, err := hex.DecodeString(svcTicketReq.CipheredServiceRequest)
 		mustBeNil(err)
