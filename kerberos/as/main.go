@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/fsmiamoto/system_security/kerberos/as/contracts"
@@ -29,30 +30,38 @@ func main() {
 		request := contracts.TGTRequest{}
 
 		if err := json.Unmarshal(c.Body(), &request); err != nil {
-			log.Println(err)
-			return err
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusBadRequest, "invalid json")
 		}
 
 		client, err := repository.Get(request.ClientID)
 		if err != nil {
-			return err
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusNotFound, "client not found")
 		}
 
 		data, err := hex.DecodeString(string(request.CipheredServiceRequest))
 		if err != nil {
-			return err
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusBadRequest, "invalid service request")
 		}
 
 		unencrypted, err := crypto.Decrypt(client.SecretKey, client.InitVector, data)
+		if err != nil {
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusBadRequest, "invalid service request")
+		}
 
 		serviceReq := new(contracts.ServiceRequest)
 		if err := json.Unmarshal(unencrypted, serviceReq); err != nil {
-			return err
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusBadRequest, "invalid service request")
 		}
 
 		key, err := crypto.GenKey()
 		if err != nil {
-			return err
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusInternalServerError, "internal server error")
 		}
 
 		tgt, err := json.Marshal(contracts.TGT{
@@ -64,7 +73,8 @@ func main() {
 
 		tgtBytes, err := crypto.Encrypt([]byte(tgsKey), []byte(tgsInitVector), tgt)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusInternalServerError, "internal server error")
 		}
 
 		res, err := json.Marshal(contracts.ASResponse{
@@ -72,8 +82,16 @@ func main() {
 			TGSInitVector: tgsInitVector,
 			Nonce:         serviceReq.Nonce,
 		})
+		if err != nil {
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusInternalServerError, "internal server error")
+		}
 
-		resBytes, _ := crypto.Encrypt(client.SecretKey, client.InitVector, res)
+		resBytes, err := crypto.Encrypt(client.SecretKey, client.InitVector, res)
+		if err != nil {
+			log.Println("ERROR:", err)
+			return fiber.NewError(http.StatusInternalServerError, "internal server error")
+		}
 
 		tgtRes := contracts.TGTResponse{
 			CipheredASResponse: hex.EncodeToString(resBytes),
