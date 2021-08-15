@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/des"
 	"encoding/hex"
+	"errors"
 	"math/rand"
 	"time"
 )
@@ -22,14 +23,22 @@ func GenKey() (string, error) {
 	return hex.EncodeToString(key[:]), nil
 }
 
-func Encrypt(key, iv, plainText []byte) ([]byte, error) {
+func Encrypt(key, iv, plainText []byte) (ciphered []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			ciphered = nil
+			err = errors.New("encrypt: invalid key")
+			return
+		}
+	}()
+
 	block, err := des.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
 	padded := pKCS5Padding(plainText, block.BlockSize())
-	ciphered := make([]byte, len(padded))
+	ciphered = make([]byte, len(padded))
 
 	bm := cipher.NewCBCEncrypter(block, iv)
 	bm.CryptBlocks(ciphered, padded)
@@ -37,18 +46,26 @@ func Encrypt(key, iv, plainText []byte) ([]byte, error) {
 	return ciphered, nil
 }
 
-func Decrypt(key, iv, cipherText []byte) ([]byte, error) {
+func Decrypt(key, iv, cipherText []byte) (plain []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			plain = nil
+			err = errors.New("decrypt: invalid key")
+			return
+		}
+	}()
+
 	block, err := des.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
 	bm := cipher.NewCBCDecrypter(block, iv)
-	unciphered := make([]byte, len(cipherText))
+	plain = make([]byte, len(cipherText))
 
-	bm.CryptBlocks(unciphered, cipherText)
+	bm.CryptBlocks(plain, cipherText)
 
-	return pKCS5Unpadding(unciphered), nil
+	return pKCS5Unpadding(plain), nil
 }
 
 func pKCS5Padding(src []byte, blockSize int) []byte {
