@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -12,9 +11,17 @@ import (
 	"github.com/fsmiamoto/system_security/kerberos/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+
+	"github.com/rs/zerolog/log"
 )
 
 var tgsKey, tgsInitVector string
+
+var (
+	ErrInvalidRequest = fiber.NewError(http.StatusBadRequest, "invalid request")
+	ErrClientNotFound = fiber.NewError(http.StatusNotFound, "client not found")
+	ErrInternalError  = fiber.NewError(http.StatusInternalServerError, "internal server error")
+)
 
 func main() {
 	app := fiber.New(fiber.Config{
@@ -30,39 +37,35 @@ func main() {
 		request := contracts.TGTRequest{}
 
 		if err := json.Unmarshal(c.Body(), &request); err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusBadRequest, "invalid json")
+			log.Debug().Err(err).Msgf("error while unmarshaling request")
+			return ErrInvalidRequest
 		}
 
 		client, err := repository.Get(request.ClientID)
 		if err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusNotFound, "client not found")
+			log.Debug().Err(err).Msgf("client not found")
+			return ErrClientNotFound
 		}
 
 		data, err := hex.DecodeString(string(request.CipheredServiceRequest))
 		if err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusBadRequest, "invalid service request")
+			log.Debug().Err(err).Msgf("error while hex decoding")
+			return ErrInvalidRequest
 		}
 
 		unencrypted, err := crypto.Decrypt(client.SecretKey, client.InitVector, data)
 		if err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusBadRequest, "invalid service request")
+			log.Debug().Err(err).Msgf("error while decrypting request")
+			return ErrInvalidRequest
 		}
 
 		serviceReq := new(contracts.ServiceRequest)
 		if err := json.Unmarshal(unencrypted, serviceReq); err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusBadRequest, "invalid service request")
+			log.Debug().Err(err).Msgf("error while unmarshaling request")
+			return ErrInvalidRequest
 		}
 
-		key, err := crypto.GenKey()
-		if err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusInternalServerError, "internal server error")
-		}
+		key, _ := crypto.GenKey()
 
 		tgt, err := json.Marshal(contracts.TGT{
 			ClientID:     client.ID,
@@ -70,11 +73,15 @@ func main() {
 			CreatedAt:    time.Now(),
 			KeyClientTGS: key,
 		})
+		if err != nil {
+			log.Error().Err(err).Msgf("error while marshaling tgt")
+			return ErrInternalError
+		}
 
 		tgtBytes, err := crypto.Encrypt([]byte(tgsKey), []byte(tgsInitVector), tgt)
 		if err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusInternalServerError, "internal server error")
+			log.Error().Err(err).Msgf("error while encrypting tgt")
+			return ErrInternalError
 		}
 
 		res, err := json.Marshal(contracts.ASResponse{
@@ -83,14 +90,14 @@ func main() {
 			Nonce:         serviceReq.Nonce,
 		})
 		if err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusInternalServerError, "internal server error")
+			log.Error().Err(err).Msgf("error while marshaling response")
+			return ErrInternalError
 		}
 
 		resBytes, err := crypto.Encrypt(client.SecretKey, client.InitVector, res)
 		if err != nil {
-			log.Println("ERROR:", err)
-			return fiber.NewError(http.StatusInternalServerError, "internal server error")
+			log.Error().Err(err).Msgf("error while encrypting response")
+			return ErrInternalError
 		}
 
 		tgtRes := contracts.TGTResponse{

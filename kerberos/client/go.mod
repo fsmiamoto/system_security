@@ -9,4 +9,5 @@ require (
 	github.com/fsmiamoto/system_security/kerberos/service v0.0.0-20210809005524-d3a32bfe7d2f
 	github.com/fsmiamoto/system_security/kerberos/tgs v0.0.0-20210809005524-d3a32bfe7d2f
 	github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519
+	github.com/rs/zerolog v1.23.0
 )

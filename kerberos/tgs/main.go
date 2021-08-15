@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"log"
+	"net/http"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	as "github.com/fsmiamoto/system_security/kerberos/as/contracts"
 	"github.com/fsmiamoto/system_security/kerberos/crypto"
@@ -15,9 +16,16 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-var secretKey, initVector string
+var (
+	secretKey, initVector string
+	accessPeriod          = 10 * time.Minute
+)
 
-var accessPeriod = 10 * time.Minute
+var (
+	ErrInvalidRequest  = fiber.NewError(http.StatusBadRequest, "invalid service ticket request")
+	ErrServiceNotFound = fiber.NewError(http.StatusNotFound, "service not found")
+	ErrInternalError   = fiber.NewError(http.StatusInternalServerError, "internal server error")
+)
 
 func main() {
 	app := fiber.New(fiber.Config{
@@ -31,42 +39,60 @@ func main() {
 		c.Accepts("application/json")
 
 		svcTicketReq := &contracts.ServiceTicketRequest{}
-		mustBeNil(json.Unmarshal(c.Body(), svcTicketReq))
+		if err := json.Unmarshal(c.Body(), svcTicketReq); err != nil {
+			log.Debug().Err(err).Msg("error while unmarshaling ticker request")
+			return ErrInvalidRequest
+		}
 
 		tgtBytes, err := hex.DecodeString(svcTicketReq.CipheredTGT)
-		mustBeNil(err)
+		if err != nil {
+			log.Debug().Err(err).Msg("error while decoding hex of tgt")
+			return fiber.NewError(fiber.StatusBadRequest, "invalid service ticket request")
+		}
 
 		tgtBytes, err = crypto.Decrypt([]byte(secretKey), []byte(initVector), tgtBytes)
+		if err != nil {
+			log.Debug().Err(err).Msg("error while decrypting tgt")
+			return fiber.NewError(fiber.StatusBadRequest, "invalid service ticket request")
+		}
 
 		tgt := &as.TGT{}
 
-		mustBeNil(json.Unmarshal(tgtBytes, tgt))
-
-		fmt.Println("TGT:")
-		fmt.Println("Client ID:", tgt.ClientID)
-		fmt.Println("Key:", tgt.KeyClientTGS)
-		fmt.Println("Period:", tgt.AccessPeriod)
-		fmt.Println("Created at:", tgt.CreatedAt)
+		if err := json.Unmarshal(tgtBytes, tgt); err != nil {
+			log.Debug().Err(err).Msg("error while unmarshaling tgt")
+			return ErrInvalidRequest
+		}
 
 		if time.Now().After(tgt.CreatedAt.Add(tgt.AccessPeriod)) {
-			return fiber.NewError(fiber.StatusUnauthorized, "expired TGT")
+			log.Info().Msgf("expired tgt from %v", tgt.ClientID)
+			return ErrInvalidRequest
 		}
 
 		svcReqBytes, err := hex.DecodeString(svcTicketReq.CipheredServiceRequest)
-		mustBeNil(err)
+		if err != nil {
+			log.Debug().Err(err).Msg("error while decoding hex from ciphered service request")
+			return ErrInvalidRequest
+		}
 
 		svcReqBytes, err = crypto.Decrypt([]byte(tgt.KeyClientTGS), []byte(initVector), svcReqBytes)
+		if err != nil {
+			log.Debug().Err(err).Msgf("error while decrypting request")
+			return ErrInvalidRequest
+		}
 
 		svcReq := &contracts.ServiceRequest{}
-		mustBeNil(json.Unmarshal(svcReqBytes, svcReq))
+		if err := json.Unmarshal(svcReqBytes, svcReq); err != nil {
+			log.Debug().Err(err).Msgf("error while unmarshaling request")
+			return ErrInvalidRequest
+		}
 
 		svc, err := repository.Get(svcReq.ServiceID)
 		if err != nil {
-			fmt.Println(err)
-			return fiber.NewError(fiber.StatusBadRequest, "invalid service")
+			log.Debug().Err(err).Msg("service not found")
+			return ErrServiceNotFound
 		}
 
-		serviceClientKey, err := crypto.GenKey()
+		serviceClientKey, _ := crypto.GenKey()
 
 		serviceTicket := &contracts.ServiceTicket{
 			ClientID:         svcReq.ClientID,
@@ -75,10 +101,16 @@ func main() {
 		}
 
 		serviceTicketBytes, err := json.Marshal(serviceTicket)
-		mustBeNil(err)
+		if err != nil {
+			log.Error().Err(err).Msgf("error while marshaling ticket")
+			return ErrInternalError
+		}
 
 		serviceTicketBytes, err = crypto.Encrypt(svc.SecretKey, svc.InitVector, serviceTicketBytes)
-		mustBeNil(err)
+		if err != nil {
+			log.Error().Err(err).Msgf("error while encrypting service ticket")
+			return fiber.NewError(fiber.StatusInternalServerError, "internal server error")
+		}
 
 		tgsRes := &contracts.TGSResponse{
 			AccessPeriod:      accessPeriod,
@@ -88,9 +120,16 @@ func main() {
 		}
 
 		tgsResBytes, err := json.Marshal(tgsRes)
-		mustBeNil(err)
+		if err != nil {
+			log.Debug().Err(err).Msg("error while marshaling response")
+			return ErrInternalError
+		}
+
 		tgsResBytes, err = crypto.Encrypt([]byte(tgt.KeyClientTGS), []byte(initVector), tgsResBytes)
-		mustBeNil(err)
+		if err != nil {
+			log.Error().Err(err).Msgf("error while encrypting response")
+			return ErrInternalError
+		}
 
 		svcTicketRes := &contracts.ServiceTicketResponse{
 			CipheredServiceTicket: hex.EncodeToString(serviceTicketBytes),
@@ -101,10 +140,4 @@ func main() {
 	})
 
 	app.Listen(":4000")
-}
-
-func mustBeNil(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
 }

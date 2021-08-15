@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/fsmiamoto/system_security/kerberos/crypto"
@@ -12,11 +12,19 @@ import (
 	tgs "github.com/fsmiamoto/system_security/kerberos/tgs/contracts"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/rs/zerolog/log"
 )
 
-var secretKey, initVector string
+var (
+	secretKey, initVector string
+	accessPeriod          = 10 * time.Minute
+)
 
-var accessPeriod = 10 * time.Minute
+var (
+	ErrInvalidRequest = fiber.NewError(http.StatusBadRequest, "invalid request")
+	ErrUnauthorized   = fiber.NewError(http.StatusUnauthorized, "unauthorized")
+	ErrInternalError  = fiber.NewError(http.StatusInternalServerError, "internal server error")
+)
 
 func main() {
 	app := fiber.New(fiber.Config{
@@ -30,14 +38,27 @@ func main() {
 		c.Accepts("application/json")
 
 		req := &contracts.ServiceRequest{}
-		mustBeNil(json.Unmarshal(c.Body(), req))
+		if err := json.Unmarshal(c.Body(), req); err != nil {
+			log.Debug().Err(err).Msgf("invalid request")
+			return ErrInvalidRequest
+		}
 
 		ticketBytes, err := hex.DecodeString(req.CipheredServiceTicket)
-		mustBeNil(err)
+		if err := json.Unmarshal(c.Body(), req); err != nil {
+			log.Debug().Err(err).Msgf("invalid request")
+			return ErrInvalidRequest
+		}
 		ticketBytes, err = crypto.Decrypt([]byte(secretKey), []byte(initVector), ticketBytes)
+		if err := json.Unmarshal(c.Body(), req); err != nil {
+			log.Debug().Err(err).Msgf("invalid request")
+			return ErrInvalidRequest
+		}
 
 		t := &tgs.ServiceTicket{}
-		mustBeNil(json.Unmarshal(ticketBytes, t))
+		if err := json.Unmarshal(ticketBytes, t); err != nil {
+			log.Debug().Err(err).Msgf("invalid request")
+			return ErrInvalidRequest
+		}
 
 		res := &contracts.Response{
 			Result: time.Now(),
@@ -45,25 +66,28 @@ func main() {
 		}
 
 		if t.CreatedAt.Add(t.AccessPeriod).After(time.Now()) {
-			return fiber.NewError(fiber.StatusUnauthorized, "invalid ticket")
+			log.Info().Msgf("ticket expired, created at: %v", t.CreatedAt)
+			return ErrUnauthorized
 		}
 
 		resBytes, err := json.Marshal(res)
-		mustBeNil(err)
+		if err != nil {
+			log.Error().Err(err).Msgf("error while trying to marshal json")
+			return ErrInternalError
+		}
 
 		resBytes, err = crypto.Encrypt([]byte(t.KeyClientService), []byte(initVector), resBytes)
+		if err != nil {
+			log.Error().Err(err).Msgf("error while trying to marshal json")
+			return ErrInternalError
+		}
 
 		resp := &contracts.ServiceResponse{
 			CipheredResponse: hex.EncodeToString(resBytes),
 		}
+
 		return c.JSON(resp)
 	})
 
 	app.Listen(":5000")
-}
-
-func mustBeNil(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
 }

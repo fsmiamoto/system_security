@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"time"
@@ -15,6 +15,7 @@ import (
 	service "github.com/fsmiamoto/system_security/kerberos/service/contracts"
 	tgs "github.com/fsmiamoto/system_security/kerberos/tgs/contracts"
 	"github.com/hokaccha/go-prettyjson"
+    "github.com/rs/zerolog/log"
 )
 
 var clientID, secretKey, initVector string
@@ -28,6 +29,7 @@ var ticketGrantingServer = "http://localhost:4000"
 var serviceServer = "http://localhost:5000"
 
 func main() {
+    // Talk to AS
 	svcReq := contracts.ServiceRequest{
 		AccessPeriod: accessPeriod,
 		ServiceID:    serviceID,
@@ -35,10 +37,14 @@ func main() {
 	}
 
 	data, err := json.Marshal(svcReq)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while marshaling AS request")
+    }
 
 	ciphered, err := crypto.Encrypt([]byte(secretKey), []byte(initVector), data)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while encrypting AS request")
+    }
 
 	req := contracts.TGTRequest{
 		ClientID:               clientID,
@@ -46,29 +52,45 @@ func main() {
 	}
 
 	body, err := json.Marshal(req)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while marshaling TGT request")
+    }
 
 	resp, err := httpClient.Post(authorizationServer, "application/json", bytes.NewReader(body))
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while marshaling TGT request")
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        body, _ := ioutil.ReadAll(resp.Body)
+        log.Fatal().Msgf("error from AS: %v",string(body))
+    }
 
 	tgtResp := &contracts.TGTResponse{}
 
 	d := json.NewDecoder(resp.Body)
-	err = d.Decode(tgtResp)
-	mustBeNil(err)
+    if err := d.Decode(tgtResp); err != nil {
+        log.Fatal().Err(err).Msg("error while decoding tgt response")
+    }
 
 	c, err := hex.DecodeString(tgtResp.CipheredASResponse)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msg("error while hex decoding AS response")
+    }
 
 	u, err := crypto.Decrypt([]byte(secretKey), []byte(initVector), c)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msg("error while decrypting AS response")
+    }
 
 	asResp := &contracts.ASResponse{}
 
-	mustBeNil(json.Unmarshal(u, asResp))
+    if err := json.Unmarshal(u, asResp); err != nil {
+        log.Fatal().Err(err).Msg("error while unmarshal AS response")
+    }
 
 	if asResp.Nonce != svcReq.Nonce {
-		log.Fatalf("Nonce received does not match %d; want %d", asResp.Nonce, svcReq.Nonce)
+        log.Fatal().Msgf("error: nonce received does not match %d; want %d", asResp.Nonce, svcReq.Nonce)
 	}
 
 	a, _ := prettyjson.Marshal(asResp)
@@ -78,6 +100,8 @@ func main() {
 	fmt.Println(string(t))
 	fmt.Println(string(a))
 
+    // Talk to TGS
+
 	tgsSvcReq := &tgs.ServiceRequest{
 		ClientID:     clientID,
 		ServiceID:    serviceID,
@@ -86,10 +110,14 @@ func main() {
 	}
 
 	tgsSvcReqBytes, err := json.Marshal(tgsSvcReq)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while marshaling tgs service request")
+    }
 
 	tgsSvcReqBytes, err = crypto.Encrypt([]byte(asResp.KeyClientTGS), []byte(asResp.TGSInitVector), tgsSvcReqBytes)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while encrypting tgs service request")
+    }
 
 	str := &tgs.ServiceTicketRequest{
 		CipheredServiceRequest: hex.EncodeToString(tgsSvcReqBytes),
@@ -97,24 +125,43 @@ func main() {
 	}
 
 	body, err = json.Marshal(str)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while marshaling service ticket request")
+    }
 
 	resp, err = httpClient.Post(ticketGrantingServer, "application/json", bytes.NewReader(body))
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while sending request to tgs")
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        body, _ := ioutil.ReadAll(resp.Body)
+        log.Fatal().Msgf("error from tgs: %v", string(body))
+    }
 
 	tgsRes := &tgs.ServiceTicketResponse{}
 
 	d = json.NewDecoder(resp.Body)
-	mustBeNil(d.Decode(tgsRes))
+    if err := d.Decode(tgsRes); err != nil {
+        log.Fatal().Err(err).Msgf("error while unmarshaling service ticket response")
+    }
 
 	tgsResBytes, err := hex.DecodeString(tgsRes.CipheredTGSResponse)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while hex decoding service ticket response")
+    }
 	tgsResBytes, err = crypto.Decrypt([]byte(asResp.KeyClientTGS), []byte(asResp.TGSInitVector), tgsResBytes)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while decrypting service ticket response")
+    }
 
 	tgsResponse := &tgs.TGSResponse{}
-	mustBeNil(json.Unmarshal(tgsResBytes, tgsResponse))
+    if err := json.Unmarshal(tgsResBytes, tgsResponse); err != nil {
+        log.Fatal().Err(err).Msgf("error while unmarshaling tgs response")
+    }
 
 	if tgsResponse.Nonce != tgsSvcReq.Nonce {
-		log.Fatalf("Nonce is different from expected %d; want %d", tgsResponse.Nonce, tgsSvcReq.Nonce)
+        log.Fatal().Msgf("error[TGS]: nonce received is different from expected %d; want %d", tgsResponse.Nonce, tgsSvcReq.Nonce)
 	}
 
 	fmt.Println("Response - TGS")
@@ -124,14 +171,21 @@ func main() {
 	fmt.Println(string(a))
 	fmt.Println(string(t))
 
+    // Talk to service
+
 	r := service.Request{
 		ClientID:     clientID,
 		AccessPeriod: tgsResponse.AccessPeriod,
 	}
 
 	rBytes, err := json.Marshal(r)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while marshaling service request")
+    }
 	rBytes, err = crypto.Encrypt([]byte(tgsResponse.KeyClientService), []byte(tgsResponse.ServiceInitVector), rBytes)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while encrypting service request")
+    }
 
 	svcReqq := &service.ServiceRequest{
 		CipheredRequest:       hex.EncodeToString(rBytes),
@@ -139,34 +193,45 @@ func main() {
 	}
 
 	svcReqBytes, err := json.Marshal(svcReqq)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while marshaling service request body")
+    }
 
 	resp, err = httpClient.Post(serviceServer, "application/json", bytes.NewReader(svcReqBytes))
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error while sending request to service")
+    }
+    
+    if resp.StatusCode != http.StatusOK {
+        body, _ := ioutil.ReadAll(resp.Body)
+        log.Fatal().Msgf("error[service]: %v",string(body))
+    }
 
 	svcResp := &service.ServiceResponse{}
 	d = json.NewDecoder(resp.Body)
-	mustBeNil(d.Decode(svcResp))
+    if err := d.Decode(svcResp); err != nil {
+        log.Fatal().Err(err).Msgf("error while unmarhsaling service response")
+    }
 
 	fmt.Println("Response - Service")
 	a, _ = prettyjson.Marshal(svcResp)
 	fmt.Println(string(a))
 
 	respBytes, err := hex.DecodeString(svcResp.CipheredResponse)
-	mustBeNil(err)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error hex decoding service response")
+    }
+
 	respBytes, err = crypto.Decrypt([]byte(tgsResponse.KeyClientService), []byte(tgsResponse.ServiceInitVector), respBytes)
+    if err != nil {
+        log.Fatal().Err(err).Msgf("error decrypting service response")
+    }
 
 	rr := &service.Response{}
-	mustBeNil(json.Unmarshal(respBytes, rr))
+    if err := json.Unmarshal(respBytes, rr); err != nil {
+        log.Fatal().Err(err).Msgf("error unmarshaling service response")
+    }
 
-	fmt.Println("Response - Service")
 	a, _ = prettyjson.Marshal(rr)
 	fmt.Println(string(a))
-}
-
-// helper for dumb err checking, don't do this on production
-func mustBeNil(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
 }
