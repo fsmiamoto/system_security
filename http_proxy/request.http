@@ -1,0 +1,4 @@
+GET / HTTP/1.1
+Host: utfpr.edu.br
+User-Agent: http_proxy/0.0.1
+Accept: */*
