@@ -24,3 +24,7 @@ compile-daemon:
 	else\
 		$(GO) install github.com/githubnemo/CompileDaemon@latest;\
 	fi
+
+.PHONY: checksum
+checksum:
+	md5sum $(BINDIR)/$(BIN)
