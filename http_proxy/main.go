@@ -8,6 +8,7 @@ import (
 	"log/syslog"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -107,6 +108,7 @@ func handleRequest(conn net.Conn) {
 		log.Println(err)
 		return
 	}
+	defer client.Close()
 
 	_, err = io.Copy(client, bytes.NewBuffer(buf))
 	if err != nil {
@@ -114,5 +116,19 @@ func handleRequest(conn net.Conn) {
 		return
 	}
 
-	io.Copy(conn, client)
+	respBytes := bytes.NewBuffer(nil)
+
+	io.Copy(respBytes, client)
+
+	statusCodeRe := regexp.MustCompile(`(?m)HTTP/[0-9]\.[0-9] ([0-9]+) .*$`)
+	statusMatches := statusCodeRe.FindStringSubmatch(respBytes.String())
+	if len(statusMatches) == 0 {
+		log.Println("Status code was not found")
+		conn.Write([]byte(errResponse))
+		return
+	}
+
+	statusCode, _ = strconv.Atoi(statusMatches[1])
+
+	io.Copy(conn, respBytes)
 }
