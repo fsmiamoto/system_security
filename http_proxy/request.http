@@ -1,4 +1,7 @@
-GET / HTTP/1.1
-Host: utfpr.edu.br
-User-Agent: http_proxy/0.0.1
+GET /monitorando HTTP/1.1
+Host: www.utfpr.edu.br
+User-Agent: curl/7.78.0
 Accept: */*
+
+
+

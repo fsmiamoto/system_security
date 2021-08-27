@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"log"
+	"log/syslog"
 	"net"
 	"regexp"
 	"strings"
@@ -15,7 +17,10 @@ const (
 	protocol = "tcp"
 )
 
-const errResponse = `
+const errResponse = `HTTP/1.1 403 Forbidden
+Content-Type: text/html
+Connection: Closed
+
 <html>
     <head>
         <title>Exemplo de resposta HTTP</title>
@@ -24,18 +29,30 @@ const errResponse = `
         <h1>Acesso não autorizado!</h1>
     </body>
 </html>
+
+
 `
 
+var logger *syslog.Writer
+
 func main() {
-	l, err := net.Listen(protocol, host+":"+port)
+	var err error
+
+	logger, err = syslog.Dial("tcp", "192.168.122.103:514",
+		syslog.LOG_WARNING|syslog.LOG_DAEMON, "demotag")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer l.Close()
+
+	listener, err := net.Listen(protocol, host+":"+port)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer listener.Close()
 
 	log.Printf("Listening for connections at %v:%v", host, port)
 	for {
-		conn, err := l.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -45,6 +62,7 @@ func main() {
 
 func handleRequest(conn net.Conn) {
 	const bufLen = 1024
+	var statusCode int
 	defer conn.Close()
 
 	buf := make([]byte, bufLen)
@@ -52,21 +70,35 @@ func handleRequest(conn net.Conn) {
 	_, err := conn.Read(buf)
 	if err != nil {
 		log.Printf("ERROR: %v", err)
-	}
-
-	log.Printf("Request: %s", string(buf))
-
-	if strings.Contains(string(buf), "monitorando") {
-		conn.Write([]byte(errResponse))
 		return
 	}
 
 	re := regexp.MustCompile(`(?m)Host:\s+([^\s]+)\s+`)
-
 	matches := re.FindStringSubmatch(string(buf))
 	if len(matches) == 0 {
 		log.Println("Host header was not found")
 		conn.Write([]byte(errResponse))
+		return
+	}
+	host := matches[1]
+
+	clientIp := conn.RemoteAddr().String()
+	serverAddr, err := net.ResolveTCPAddr("tcp", host+":80")
+	if err != nil {
+		log.Printf("ERROR: %v", err)
+		return
+	}
+
+	defer func() {
+		msg := fmt.Sprintf("Request - Client: %v - Server: %v - Status: %d\n", clientIp, serverAddr, statusCode)
+		log.Printf(msg)
+		logger.Info(msg)
+	}()
+
+	if strings.Contains(string(buf), "monitorando") {
+		log.Println("request denied")
+		conn.Write([]byte(errResponse))
+		statusCode = 403
 		return
 	}
 
