@@ -21,6 +21,7 @@ const (
 const errResponse = `HTTP/1.1 403 Forbidden
 Content-Type: text/html
 Connection: Closed
+Content-Type: text/html; charset=utf-8
 
 <html>
     <head>
@@ -36,11 +37,16 @@ Connection: Closed
 
 var logger *syslog.Writer
 
+var (
+	syslogServerAddr = "192.168.122.103:514"
+	syslogTag        = "my_proxy"
+)
+
 func main() {
 	var err error
 
-	logger, err = syslog.Dial("tcp", "192.168.122.103:514",
-		syslog.LOG_WARNING|syslog.LOG_DAEMON, "demotag")
+	logger, err = syslog.Dial("tcp", syslogServerAddr,
+		syslog.LOG_WARNING|syslog.LOG_DAEMON, syslogTag)
 	if err != nil {
 		log.Fatal(err)
 	}
